@@ -77,7 +77,7 @@ function init_p7zip_path()
             return
         end
     end
-    global p7zip_path = Sys.which(p7zip_exe)
+    global p7zip_path = something(Sys.which(p7zip_exe), p7zip_exe)
 end
 
 function __init__()
@@ -85,6 +85,8 @@ function __init__()
     init_p7zip_path()
     PATH[] = dirname(p7zip_path)
     push!(PATH_list, PATH[])
+    append!(LIBPATH_list, [joinpath(Sys.BINDIR, Base.LIBDIR, "julia"), joinpath(Sys.BINDIR, Base.LIBDIR)])
+    LIBPATH[] = join(LIBPATH_list, pathsep)
 end
 
 # JLLWrappers API compatibility shims.  Note that not all of these will really make sense.

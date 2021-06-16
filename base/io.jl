@@ -15,7 +15,7 @@ struct EOFError <: Exception end
 A system call failed with an error code (in the `errno` global variable).
 """
 struct SystemError <: Exception
-    prefix::AbstractString
+    prefix::String
     errnum::Int32
     extrainfo
     SystemError(p::AbstractString, e::Integer, extrainfo) = new(p, e, extrainfo)
@@ -885,8 +885,9 @@ end
 
 function readuntil(io::IO, target::AbstractString; keep::Bool=false)
     # small-string target optimizations
-    isempty(target) && return ""
-    c, rest = Iterators.peel(target)
+    x = Iterators.peel(target)
+    isnothing(x) && return ""
+    c, rest = x
     if isempty(rest) && c <= '\x7f'
         return readuntil_string(io, c % UInt8, keep)
     end
@@ -1034,7 +1035,7 @@ end
 
 Return an iterable object yielding [`read(io, T)`](@ref).
 
-See also: [`skipchars`](@ref), [`eachline`](@ref), [`readuntil`](@ref)
+See also [`skipchars`](@ref), [`eachline`](@ref), [`readuntil`](@ref).
 
 !!! compat "Julia 1.6"
     `readeach` requires Julia 1.6 or later.
@@ -1058,6 +1059,8 @@ iterate(itr::ReadEachIterator{T}, state=nothing) where T =
 eltype(::Type{ReadEachIterator{T}}) where T = T
 
 IteratorSize(::Type{<:ReadEachIterator}) = SizeUnknown()
+
+isdone(itr::ReadEachIterator, state...) = eof(itr.stream)
 
 # IOStream Marking
 # Note that these functions expect that io.mark exists for
@@ -1176,8 +1179,13 @@ julia> io = IOBuffer("JuliaLang is a GitHub organization.");
 julia> countlines(io)
 1
 
+julia> eof(io) # counting lines moves the file pointer
+true
+
+julia> io = IOBuffer("JuliaLang is a GitHub organization.");
+
 julia> countlines(io, eol = '.')
-0
+1
 ```
 """
 function countlines(io::IO; eol::AbstractChar='\n')
